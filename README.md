@@ -53,6 +53,11 @@ CombatRules := {"Bahamut":[3,1,2]}
 Configured that the 3rd party will be first preference followed by 1st and 2nd, remove the party number from the \[\] if do not wish to be selected (e.g. Red Giant absorb lightning). If __ConsiderFatigue__ set to yes, then it would read party fatigue from the state file and compare with the __FatigueThreshold__.
 It then select the next best party from the order, default to first party when all party fatigue check failed.
 
+The existing rules used following parties:
+1. Holy Mage
+2. Lightning Physical
+3. Earth Mixed
+
 The other configurations are:
 ```
 SelectParty=yes ;Select party based on combat state text file and rules in CombatRules
