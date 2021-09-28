@@ -27,7 +27,7 @@ PaintingPriority.Push("painting_boss:)
 
 ## Additional Features:
 ### Chest
-Open the chest based on the state file supplied by other proxy app e.g. RK Squared, in the format of CSV
+The script open the chest based on the state file supplied by other proxy app e.g. RK Squared, in the format of CSV
 ```
 5,3,1
 ``` 
@@ -40,17 +40,17 @@ MinOpenChestId=3
 ChestFile=C:\Users\WindowUser\AppData\Roaming\RK Squared\state\chest.txt 
 ```
 ### Party Selection
-Select party based on the state file supplied by other proxy app e.g. RK Squared, in the format of CSV
+The script also consider the party selection based on the state file supplied by other proxy app e.g. RK Squared, in the format of CSV
 ```
 Bahamut,50,35,0
 ```
 Representing enemy name, first party total fatigue, second party total fatigue, third party total fatigue
 
-Also define the **CombatRules** with Enemy name : \[order of party number\], 
+The script also defines the __CombatRules__ with format __"Enemy name":= \[order of party number\]__, 
 ```
 CombatRules := {"Bahamut":[3,1,2]}
 ```
-Configured that the 3rd party will be first preference followed by 1st and 2nd, remove the party number from the \[\] if do not wish to be selected (e.g. Red Giant absorb lightning). If *ConsiderFatigue* set to yes, then it would read party fatigue from the state file and compare with the *FatigueThreshold*.
+Configured that the 3rd party will be first preference followed by 1st and 2nd, remove the party number from the \[\] if do not wish to be selected (e.g. Red Giant absorb lightning). If __ConsiderFatigue__ set to yes, then it would read party fatigue from the state file and compare with the __FatigueThreshold__.
 It then select the next best party from the order, default to first party when all party fatigue check failed.
 
 The other configurations are:
