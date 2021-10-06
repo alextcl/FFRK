@@ -484,18 +484,25 @@ HasValue(haystack, needle) {
 
 TryFindImage(imageName, startSection, endSection, err1, err2, n) {
 	global FoundX, FoundY, ImageText, SearchMethod
+	found := false
 	If (SearchMethod == "FindText")
 	{
 		If (ok:=FindText(FoundX, FoundY, startSection.X, startSection.Y, endSection.Width, endSection.Height, err1, err2, ImageText[imageName]))
-			return true
+			found := true
 	}
 	else
 	{
 		ImageSearch, FoundX, FoundY, startSection.X, startSection.Y, endSection.Width, endSection.Height, %n% %A_ScriptDir%\images\%imageName%.png
 		If (ErrorLevel = 0)
-			return true
+			found := true
 	}
-	return false
+
+	If (found == true)
+		OutputDebug found image %imageName% at %FoundX%, %FoundY%
+	else
+		OutputDebug % "Unable to find image " . imageName . " at area " . startSection.X . "," . startSection.Y . "," . endSection.Width . "," . endSection.Height
+	
+	return found
 }
 
 SetupImageText:

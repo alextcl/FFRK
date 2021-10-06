@@ -58,7 +58,7 @@ SkipPainting=yes ;skip painting skip with proxy state file
 SkipExploreTreasureCount=2 ;skip explore depending on at min how many treasure behind, set 0 to not skip
 SkipCombatExploreCount=0 ;skip combat and end floor early, depending at max how many explore to ignore (also check no treasure left), set -1 to not skip 
 ```
-Configure the **SkipPainting** to whether skip to Exploration Painting (if there are treasure behind) or Combat Painting (Go to portal early if no more treasure or exploration). **SkipExploreTreasureCount** is the minimum number of treasure painting behind before start skipping exploration, set 0 not skip exploration and take chance. **SkipCombatExploreCount** is the maximum exploration behind allowed to be ignored before it go to portal/boss early, set -1 if you dont want skip combat.
+Configure the **SkipPainting** to whether skip to Exploration Painting (if there are treasure behind) or Combat Painting (go to portal early if no more treasure or exploration). **SkipExploreTreasureCount** is the minimum number of treasure painting behind before start skipping exploration, set 0 not skip exploration and take chance. **SkipCombatExploreCount** is the maximum exploration behind allowed to be ignored before it go to portal/boss early, set -1 if you dont want skip combat.
 The state file wil have following format
 ```
 8,true,false,true,0,1
@@ -109,4 +109,6 @@ The existing rules used following parties, you can alter rules according to your
 2. Lightning Physical
 3. Earth Mixed
 
-
+### Troubleshooting the script
+Download one of the debugger http://fincs.ahk4.net/scite4ahk/
+Run the script in the debugger and it should print some description about what the script is doing
