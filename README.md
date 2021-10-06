@@ -7,14 +7,14 @@ Requirements:
 - Autohotkey installed on your PC
 - Your favorite Android emulator (I used Nox with a mobile window resolution of 540x960)
 - Your FFRK settings must be set to "Simplified Display" or else some animations will cause Autohotkey's ImageSearch to fail.
-- Your top team must be unbeatable even at 10 fatigue points. A Holy Magic team is highly recommended.
+- Your top/first team must be unbeatable even at 10 fatigue points. A Holy Magic team is highly recommended.
 
 ## Getting started and basic usage
 If you want to make your own changes to the script open FFRK Labyrinth.ahk with notepad. Remember to exit and reload the script after saving changes. Keep the emulator resolution as small as possible (e.g. 540*960 in Nox).
 
 The basic configuration are 
 ```AutoHotkey
-SearchMethod:="FindText" ;use FindText or ImageSearch
+SearchMethod:="ImageSearch" ;use FindText or ImageSearch
 EmulatorAppName:= "NoxPlayer" ;set this to the name of the emulator app
 StateFileDir=C:\Users\{User}\AppData\Roaming\RK Squared\state\ ;change the path to your local RK Squared installation
 DefaultSleepTime=1500 ;reduce to increase response time
@@ -26,12 +26,13 @@ Customise the crash scan interval **CrashScanWhenElapsedSec** if you experience 
 select party, or skip painting.
 
 Depending if you used **FindText** or **ImageSearch** to search for FFRK click area:
-### Image Search
-To get this script to work you need to replace the snips in the "images" folder with your own. Take screenshots with Windows Snipping Tool while going through the dungeon manually. Remember to take as small and as unique colour/text as possible to speed up match. Tweak the *n* value in each **TryFindImage** to higher if there are failure after a while.
+### ImageSearch
+To get this script to work you need to replace the snips in the "images" folder with your own. Take screenshots with Windows Snipping Tool while going through the dungeon manually. Remember to take as small as possible and as unique colour/text as possible to speed up match. Tweak the *n* value in **DefaultVariation** or in each **TryFindImage** to higher if there are failure before retry image capture.
 ### FindText
-While AHK image search is fast and work most of the time, it is not very consistent. If you change your resolution or colour or after any minor update, it will fail to find the image after a while. Hence the alternative search method is **FindText**, thanks to the AHK community developer feiyue. 
-Locate the line started with "SetupImageText" and you will find a lot text value for each image. I would suggest following https://www.youtube.com/watch?v=aWRAtvJq9ZE to capture the image text for each type of image (check images folder for reference image if you dont know what to capture). 
-You can start with using the existing text and customise the **err1** and **err2** value in each **TryFindImage**.
+While AHK image search is fast and work most of the time, it is inconsistent after some times. If your PC resolution or colour rendering changes or after minor update, it will fail to find the image. Hence the alternative search method is **FindText**, thanks to the AHK community developer feiyue. 
+You can start with using the existing image texts in script and customise the **err1** and **err2** value in each **TryFindImage**. It may works if you used Nox player.
+Otherwise, Locate the line started with "SetupImageText" and you will find a lot text value for each image. Launch the [FindText.ahk](./Labyrinth%20Walker/Lib/FindText.ahk) to capture your own image text. I would suggest following https://www.youtube.com/watch?v=aWRAtvJq9ZE to capture the image text for each type of image (check [images](./Labyrinth%20Walker/images) folder for reference image if you dont know what to capture). 
+
 
 After all the images have been replaced with your own press F1 to unpause/pause the script. You can press F2 to panic close the script. 
 ## Additional Features:

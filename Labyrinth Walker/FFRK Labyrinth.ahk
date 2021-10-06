@@ -10,23 +10,23 @@ SendMode Input ;More reliable sending mode
 
 DebugScript:=false
 TheAlarm=%A_WinDir%\Media\Alarm01.wav
-SearchMethod:="FindText" ;use FindText or ImageSearch
+SearchMethod:="ImageSearch" ;use FindText or ImageSearch
+DefaultVariation:="*80"
 EmulatorAppName:= "NoxPlayer" ;set this to the name of the emulator app
 StateFileDir=C:\Users\Amanda\AppData\Roaming\RK Squared\state\ ;change the path to your local RK Squared installation
 DefaultSleepTime=1500 ;reduce to increase response time
 LongSleepTime=10000 ;set wait for n seconds x 1000 during battle before check again, to reduce CPU time
-CrashScanWhenElapsedSec:=120 ;interval seconds before start scanning for crash 
-ReturnMouse=yes ;Returns the mouse to the position it was at before clicking on the emulator
+CrashScanWhenElapsedSec:=120 ;interval seconds before startSection scanning for crash
 
 WinMove, %EmulatorAppName%, , 0, 0, ;
-WinGetPos, , , TargetW, TargetH, %EmulatorAppName%
+WinGetPos, TargetX, TargetY, TargetW, TargetH, %EmulatorAppName%
 ;Limit the search area for ImageSearch. Use %A_ScreenWidth% and %A_ScreenHeight% if you want to search the whole screen
 SearchWidth:=TargetW
 SearchHeight:=TargetH
 ScreenSplit := {} ; split the screen to 3 section to speed up search, do not change this
-ScreenSplit["Top"] := { X: 0, Y: 0, Width: SearchWidth, Height: Ceil(SearchHeight/3) }
-ScreenSplit["Middle"] := { X: 0, Y: Ceil(SearchHeight/3), Width: SearchWidth, Height: Ceil(2 * (SearchHeight/3)) }
-ScreenSplit["Bottom"] := { X: 0, Y: Ceil(2 * (SearchHeight/3)), Width: SearchWidth, Height: SearchHeight }
+ScreenSplit["Top"] := { X: TargetX, Y: TargetY, Width: SearchWidth, Height: Ceil(SearchHeight/3) }
+ScreenSplit["Middle"] := { X: TargetX, Y: (TargetY + Ceil(SearchHeight/3)), Width: SearchWidth, Height: Ceil(2 * (SearchHeight/3)) }
+ScreenSplit["Bottom"] := { X: TargetX, Y: (TargetY + Ceil(2 * (SearchHeight/3))), Width: SearchWidth, Height: SearchHeight }
 
 ;Paitings Priority
 ;Change the order to adjust priority
@@ -72,7 +72,7 @@ Gosub, SetupImageText
 Gosub, TheMainLoop
 
 F1::
-;Press F1 to start and stop your script
+;Press F1 to startSection and stop your script
 Pause, Toggle
 ;WinMove, %EmulatorAppName%, , 0, 0, ;Automtically move and resize emulator window, uncomment to use
 Gosub, TheMainLoop
@@ -84,30 +84,17 @@ ExitApp
 Return
 
 ClickOnFoundImage:
-If (SearchMethod == "FindText"){
-	FindText().Click(FoundX, FoundY, "L")
-}
-else
-{
-	MouseGetPos, ReturnX, ReturnY
-	WinGet, Active_ID, ID, A
-	Click, %FoundX%, %FoundY%, Left
-	If (ReturnMouse="yes")
-	{
-		Click, %ReturnX%, %ReturnY%, 0
-		WinActivate ahk_id %Active_ID%
-	}
-}
+FindText().Click(FoundX, FoundY, "L")
 Return
 
 ClickOnOK:
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.2, ImageText.ok))
+If (TryFindImage("ok", ScreenSplit.Middle, ScreenSplit.Bottom, 0.2, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
 	Return
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Bottom.Height,  0.2, 0.2, ImageText.ok2))
+else If (TryFindImage("ok2", ScreenSplit.Middle, ScreenSplit.Bottom, 0.2, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
@@ -120,7 +107,7 @@ if DebugScript
 	MsgBox, Debug stop on move on
 	Return
 }
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.3, ImageText.moveon))
+If (TryFindImage("moveon", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.2, 0.3, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
@@ -133,7 +120,7 @@ ContinueCrashScan:=false
 Loop
 {
 	Sleep 100
-	If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.3, ImageText.cancelauto))
+	If (TryFindImage("cancelauto", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.2, 0.3, DefaultVariation))
 	{
 		If ((AwaitingBattleComplete/15) <= AwaitingBattleComplete){
 			Sleep LongSleepTime
@@ -152,7 +139,7 @@ Loop
 		Gosub, WaitForBattleComplete
 	}
 
-	If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.1, 0.1, ImageText.enter))
+	If (TryFindImage("enter", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.1, DefaultVariation))
 	{
 		Gosub, ClickOnFoundImage
 		Sleep DefaultSleepTime
@@ -162,21 +149,21 @@ Loop
 
 	Gosub, ClickOnInsidePainting
 
-	If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Top.Y, SearchWidth, ScreenSplit.Top.Height, 0.1, 0.1, ImageText.labyrinth_blue))
+	If (TryFindImage("labyrinth_blue", ScreenSplit.Top, ScreenSplit.Top, 0.1, 0.1, DefaultVariation))
 	{
 		;Only use the painting priority loop when inside main labyrinth to prevent the script from cycling too early and choosing the wrong painting.
 		Sleep DefaultSleepTime
 		IsLastFloor := false
 		Gosub, PaintingPriority
 	}
-	else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Top.Y, SearchWidth, ScreenSplit.Top.Height, 0.1, 0.1, ImageText.labyrinth_purple))
+	else If (TryFindImage("labyrinth_purple", ScreenSplit.Top, ScreenSplit.Top, 0.1, 0.1, DefaultVariation))
 	{
 		;Last floor is purple. Only use the painting priority loop when inside main labyrinth to prevent the script from cycling too early and choosing the wrong painting.
 		Sleep DefaultSleepTime
 		IsLastFloor := true
 		Gosub, PaintingPriority
 	} 
-	else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.1, 0.1, ImageText.dungeoncomplete))
+	else If (TryFindImage("dungeoncomplete", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.1, DefaultVariation))
 	{
 		SoundPlay, %TheAlarm%, 1
 		KeyWait, LButton, D
@@ -250,7 +237,7 @@ for index, Painting in PaintingPriority
 		}
 	}
 
-	If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.2, 0.2, ImageText[Painting]))
+	If (TryFindImage(Painting, ScreenSplit.Middle, ScreenSplit.Middle, 0.2, 0.2, DefaultVariation))
 	{
 		OutputDebug, %A_Now%: Found %Painting% 
 		Gosub, ClickOnFoundImage
@@ -263,35 +250,35 @@ for index, Painting in PaintingPriority
 Return
 
 ClickOnInsidePainting:
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.1, 0.2, ImageText.go))
+If (TryFindImage("go", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnSelectParty
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.2, ImageText.sealeddoor))
+else If (TryFindImage("sealeddoor", ScreenSplit.Middle, ScreenSplit.Bottom, 0.2, 0.2, DefaultVariation))
 {
-	If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.2, ImageText[OpenSealedDoor]))
+	If (TryFindImage(OpenSealedDoor, ScreenSplit.Bottom, ScreenSplit.Bottom, 0.2, 0.2, DefaultVariation))
 	{
 		;Click on "Yes" or "no" when presented with a Sealed Door.
 		Gosub, ClickOnFoundImage
 		Sleep DefaultSleepTime
 	}
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Top.Y, SearchWidth, ScreenSplit.Top.Height, 0.2, 0.2, ImageText.inside_explorationpainting))
+else If (TryFindImage("inside_explorationpainting", ScreenSplit.Top, ScreenSplit.Top, 0.2, 0.2, DefaultVariation))
 {
 	;This "Move On" button is only clicked when inside an "Exploration Painting" to prevent the script from clicking on the "Move On" button while inside a "Treasure Painting"
 	Gosub, ClickOnMoveOn
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.2, ImageText.inside_restoration))
+else If (TryFindImage("inside_restoration", ScreenSplit.Middle, ScreenSplit.Bottom, 0.2, 0.2, DefaultVariation))
 {
 	;This "Move On" button is only clicked when inside an "Restoration Painting" to prevent the script from clicking on the "Move On" button while inside a "Treasure Painting"
 	Gosub, ClickOnMoveOn
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.2, ImageText.inside_onslaught))
+else If (TryFindImage("inside_onslaught", ScreenSplit.Middle, ScreenSplit.Bottom, 0.2, 0.2, DefaultVariation))
 {
 	;This "Move On" button is only clicked when inside an "Onslaught Painting" to prevent the script from clicking on the "Move On" button while inside a "Treasure Painting"
 	Gosub, ClickOnMoveOn
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Top.Y, SearchWidth, ScreenSplit.Top.Height, 0.2, 0.2, ImageText.inside_treasurepainting))
+else If (TryFindImage("inside_treasurepainting", ScreenSplit.Top, ScreenSplit.Top, 0.2, 0.2, DefaultVariation))
 {
 	If (OpenChest="yes")
 		Gosub, ClickOnTreasureChest
@@ -329,14 +316,14 @@ If (ErrorLevel = 0)
 	{
 		for innerIndex, ChestType in ChestTypes
 		{
-			If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.1, 0.2, ImageText[ChestType . "open"]))
+			If (TryFindImage(ChestType . "open", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
 			{
 				OutputDebug, Found opened %ChestType%
 				OpenedChests[ChestType] := 1
 			}
 			If (ChestNums[innerIndex] >= MinOpenChestId)
 			{
-				If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.2, 0.2, ImageText[ChestType]))
+				If (TryFindImage(ChestType, ScreenSplit.Middle, ScreenSplit.Middle, 0.2, 0.2, DefaultVariation))
 				{
 					OutputDebug, Click on found %ChestType%
 					Gosub, ClickOnFoundImage
@@ -344,7 +331,7 @@ If (ErrorLevel = 0)
 				}
 			}
 		}
-		If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.2, 0.2, ImageText.open))
+		If (TryFindImage("open", ScreenSplit.Middle, ScreenSplit.Middle, 0.2, 0.2, DefaultVariation))
 		{
 			If DebugScript
 				MsgBox, Stop On Open chest
@@ -352,7 +339,7 @@ If (ErrorLevel = 0)
 				Gosub, ClickOnFoundImage
 			Sleep DefaultSleepTime
 		}
-		If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.2, 0.2, ImageText.usekey))
+		If (TryFindImage("usekey", ScreenSplit.Middle, ScreenSplit.Middle, 0.2, 0.2, DefaultVariation))
 		{
 			Gosub, ClickOnFoundImage
 			Sleep DefaultSleepTime
@@ -402,13 +389,13 @@ If(SelectParty="yes")
 		}
 	}
 }
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Top.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.1, ImageText["party" . SelectedPartyNo]))
+If (TryFindImage("party" . SelectedPartyNo, ScreenSplit.Top, ScreenSplit.Bottom, 0.2, 0.1, DefaultVariation))
 {
 	FoundY := FoundY + SelectPartyOffsetY
 	Gosub, ClickOnFoundImage
 	Sleep 200
 
-	If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.1, 0.2, ImageText.go))
+	If (TryFindImage("go", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
 	{
 		If DebugScript
 			MsgBox, Debug stop on Go
@@ -424,18 +411,18 @@ If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Top.Y, SearchWidth, ScreenSplit.
 Return
 
 WaitForBattleComplete:
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.1, 0.3, ImageText.auto))
+If (TryFindImage("auto", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.3, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
 	Return
 }
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.2, 0.1, ImageText.skip))
+If (TryFindImage("skip", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.2, 0.1, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
 }
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.1, 0.2, ImageText.next))
+If (TryFindImage("next", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
@@ -444,33 +431,33 @@ Return
 
 CheckCrashRecovery:
 CrashDetected := true
-If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.1, 0.2, ImageText.crashopen))
+If (TryFindImage("crashopen", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep LongSleepTime
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.1, 0.2, ImageText.ffrkapp))
+else If (TryFindImage("ffrkapp", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep LongSleepTime
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Bottom.Y, SearchWidth, ScreenSplit.Bottom.Height, 0.1, 0.2, ImageText.play))
+else If (TryFindImage("play", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep LongSleepTime
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.1, 0.2, ImageText.exploring))
+else If (TryFindImage("exploring", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
 	ContinueCrashScan := false
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.1, 0.2, ImageText.backtitle))
+else If (TryFindImage("backtitle", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
 }
-else If (ok:=FindText(FoundX, FoundY, 0, ScreenSplit.Middle.Y, SearchWidth, ScreenSplit.Middle.Height, 0.1, 0.2, ImageText.crashok))
+else If (TryFindImage("crashok", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
@@ -495,16 +482,16 @@ HasValue(haystack, needle) {
     return false
 }
 
-TryFindImage(imageName, targetY, searchH, err1, err2, n) {
-	global FoundX, FoundY, SearchWidth, ImageText, SearchMethod
+TryFindImage(imageName, startSection, endSection, err1, err2, n) {
+	global FoundX, FoundY, ImageText, SearchMethod
 	If (SearchMethod == "FindText")
 	{
-		If (ok:=FindText(FoundX, FoundY, 0, targetY, SearchWidth, searchH, err1, err2, ImageText[imageName]))
+		If (ok:=FindText(FoundX, FoundY, startSection.X, startSection.Y, endSection.Width, endSection.Height, err1, err2, ImageText[imageName]))
 			return true
 	}
 	else
 	{
-		ImageSearch, FoundX, FoundY, 0, %targetY%, %SearchWidth%, %searchH%, %n% %A_ScriptDir%\images\%imageName%.png
+		ImageSearch, FoundX, FoundY, startSection.X, startSection.Y, endSection.Width, endSection.Height, %n% %A_ScriptDir%\images\%imageName%.png
 		If (ErrorLevel = 0)
 			return true
 	}
