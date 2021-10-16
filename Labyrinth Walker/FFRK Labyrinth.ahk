@@ -61,7 +61,7 @@ CombatRules := {"Bahamut":[3,1,2], "Ramza": [3,2,1], "Ravus": [1,3,2], "Twintani
 ,"Alexander": [2,3,1], "Behemoth": [3,1,2], "Brynhildr": [2,1,3], "Byblos": [2,1,3], "Chaos": [3,1,2], "Leviathan":[2,1,3]
 ,"Marilith": [3,1,2], "Nidhogg": [2,1,3], "Ultima Weapon":[1,2,3]
 ,"Adamanchelid": [2,1,3], "Atomos": [1,3,2], "Black Waltz No.2": [3,1,2], "Deathclaw": [1,2,3], "Green Dragon": [1,2,3]
-,"Guard Scorpion": [2,1,3], "Iron Giant": [1,3], "Lunasaur": [2,1,3], "Red Giant & Catoblepas": [1,3]
+,"Guard Scorpion": [2,1,3], "Iron Giant": [3,1], "Lunasaur": [2,1,3], "Red Giant & Catoblepas": [1,3]
 ,"Elvoret": [2,1,3], "Magic Pot": [2,3,1]}
 SelectPartyOffsetY=60 ;offset click to reach center for party selection before Battle 
 CombatFile=%StateFileDir%combat.txt 
@@ -263,7 +263,7 @@ else If (TryFindImage("sealeddoor", ScreenSplit.Middle, ScreenSplit.Bottom, 0.2,
 		Sleep DefaultSleepTime
 	}
 }
-else If (TryFindImage("inside_explorationpainting", ScreenSplit.Top, ScreenSplit.Top, 0.2, 0.2, DefaultVariation))
+else If (TryFindImage("inside_explorationpainting", ScreenSplit.Top, ScreenSplit.Middle, 0.2, 0.2, DefaultVariation))
 {
 	;This "Move On" button is only clicked when inside an "Exploration Painting" to prevent the script from clicking on the "Move On" button while inside a "Treasure Painting"
 	Gosub, ClickOnMoveOn
@@ -279,7 +279,7 @@ else If (TryFindImage("inside_onslaught", ScreenSplit.Middle, ScreenSplit.Bottom
 	Gosub, ClickOnMoveOn
 }
 else If (TryFindImage("inside_treasurepainting", ScreenSplit.Top, ScreenSplit.Top, 0.2, 0.2, DefaultVariation))
-{
+{	
 	If (OpenChest="yes")
 		Gosub, ClickOnTreasureChest
 	else
@@ -452,7 +452,7 @@ else If (TryFindImage("exploring", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 
 	Sleep DefaultSleepTime
 	ContinueCrashScan := false
 }
-else If (TryFindImage("backtitle", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
+else If (TryFindImage("backtitle", ScreenSplit.Middle, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
@@ -461,7 +461,15 @@ else If (TryFindImage("crashok", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.
 {
 	Gosub, ClickOnFoundImage
 	Sleep DefaultSleepTime
-} 
+}
+else If (TryFindImage("closeable", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
+{
+	If (TryFindImage("close", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
+	{
+		Gosub, ClickOnFoundImage
+		Sleep DefaultSleepTime
+	}  
+}
 else {
 	CrashDetected := false
 }
@@ -500,7 +508,7 @@ TryFindImage(imageName, startSection, endSection, err1, err2, n) {
 	If (found == true)
 		OutputDebug found image %imageName% at %FoundX%, %FoundY%
 	else
-		OutputDebug % "Unable to find image " . imageName . " at area " . startSection.X . "," . startSection.Y . "," . endSection.Width . "," . endSection.Height
+		OutputDebug % "Unable to find image " . imageName . " at area " . startSection.X . "," . startSection.Y . "," . endSection.Width . "," . endSection.Height . " with the err " . err1 . "," . err2 
 	
 	return found
 }
@@ -556,7 +564,13 @@ ImageText.ffrkapp:="|<>*161$31.0000000000000000000000000000000000009i0AU6PkDs1aQ
 ImageText.play:="|<>*146$31.zzzzzs37zzw0XzzyC1zzz70zzzX4ENlk284Ns77nAwTblYyDnUsT7taQDnymDDtzM3bzzzzbzzzznzzzzny"
 ImageText.exploring:="|<>*67$21.DwD3zXkzyQ3zX87wN4zXynwTqTXkzw07zk0y7zzkjzy407zU0Tw03TU0Pw03TU9Pw1vTVsPwC4"
 ImageText.backtitle:="|<>*134$35.zzzzzz01Dwzy02TtzzlzznzzXznbzz7n1D3yDY2Q3wTCQlnsyQtbbtwtn0DntnaTzbnbCTzDb0Q1yTD4w7zzzzzw"
+ImageText.closeable:="|<>0xBCBDBA@0.80$41.lsySTTvlVsyTzjU7VwzzTUS7wyRz3sTwzLzDVzwzDzy30wzzzs5wsTwTUbywTkS2TywT0y0zxtw0y1kvbn0y7nmTDUy7bVwzkzDzDlzUzDwz7zVy7VyDy7s00yTsT00MyTVwDTsyQ7kzzkzQ"
+ImageText.close:="|<>**50$43.S7q0000Q0v0000AzxU0004tyrwzjus3T7syCM1i8tCHA0rTRyRa0PBaTSP0BYPXUAtynNwrzDzRxzNzk3i8tC1S7rlyDVbzzTryzs"
 ;emulator specific image, may adjust for other app
 ImageText.crashopen:="|<>*187$18.0000z23zq7VyC0SA0yQ1yM3yM00M00M00Q0CA0AC0Q7Vs3zk0z0000U"
 ImageText.crashok:="|<>0x029789@0.91$15.003UUn4A8W1YUAw1bUAmV4QMVS4000U"
+
+;unused ignore this
+ImageText.misc:="|<>*132$29.zzzzyDnDzwT6TzsSDzzkMTzzY4n3kA9a30QnAwwzaMttzAwnnyNwbbwn1UDta7Vzzzzy"
+ImageText.mission:="|<>*120$59.0000000001U6A0030003UQM00600071s0000000/7k0000000HBX7VskS2QXn6TbtXz7R76AkA3C6AO4AMkA6M6MK0MksCAkAkc0lUs6NUNVE1X0kAlVX2U36TbtXy6506AS7X3sA80000000004"
 Return

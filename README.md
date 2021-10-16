@@ -30,9 +30,8 @@ Depending if you used **FindText** or **ImageSearch** to search for FFRK click a
 To get this script to work you need to replace the snips in the "images" folder with your own. Take screenshots with Windows Snipping Tool while going through the dungeon manually. Remember to take as small as possible and as unique colour/text as possible to speed up match. Tweak the *n* value in **DefaultVariation** or in each **TryFindImage** to higher if there are failure before retry image capture.
 ### FindText
 While AHK image search is fast and work most of the time, it is inconsistent after some times. If your PC resolution or colour rendering changes or after minor update, it will fail to find the image. Hence the alternative search method is **FindText**, thanks to the AHK community developer feiyue. 
-You can start with using the existing image texts in script and customise the **err1** and **err2** value in each **TryFindImage**. It may works if you used Nox player.
-Otherwise, Locate the line started with "SetupImageText" and you will find a lot text value for each image. Launch the [FindText.ahk](./Labyrinth%20Walker/Lib/FindText.ahk) to capture your own image text. I would suggest following https://www.youtube.com/watch?v=aWRAtvJq9ZE to capture the image text for each type of image (check [images](./Labyrinth%20Walker/images) folder for reference image if you dont know what to capture). 
-
+You can start with using the existing image texts in script and customise the **err1** and **err2** value in each **TryFindImage**. It may works without any changes if you used Nox player(540x960) with desktop display resolution 1920*1080.
+Otherwise, Locate the line started with "SetupImageText" and you will find a lot text value for each image. Launch the [FindText.ahk](./Labyrinth%20Walker/Lib/FindText.ahk) to capture your own image text. I would suggest following https://www.youtube.com/watch?v=aWRAtvJq9ZE to capture the image text for each type of image (check [images](./Labyrinth%20Walker/images) folder for reference image if you dont know what to capture). Also see the [Troubleshooting FindText](##troubleshooting-findtext).
 
 After all the images have been replaced with your own press F1 to unpause/pause the script. You can press F2 to panic close the script. 
 ## Additional Features:
@@ -111,4 +110,18 @@ The existing rules used following parties, you can alter rules according to your
 
 ### Troubleshooting the script
 Download one of the debugger http://fincs.ahk4.net/scite4ahk/
-Run the script in the debugger and it should print some description about what the script is doing
+Debug the script in the debugger and press run. It should print some description about what the script is doing. For e.g. which images it couldnt find.
+
+## Troubleshooting FindText
+Since the script used a set of error rate and image text targeted to the developer machine (1920*1080), you may have issue finding the image or finding more image than you need with FindText. The script also splits the emulator into 3 vertical sections (Top, Middle, Bottom) to limit the search area and speed up the search. Sometimes the button could be at the edge of the section and get ignored because of the search area.
+
+Launch [FindText.ahk](./Labyrinth%20Walker/Lib/FindText.ahk) and patse the imagetext that the script failed to find to the lower part of the window and run a test. If it was found in FindText window and been highlighted correctly but failed in the script, observe the screen section in the TryFindImage line.
+```AutoHotkey
+If (TryFindImage("moveon", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.2, 0.3, DefaultVariation))
+```
+For example, the line above shown it only search in the bottom section of the emulator but the button could be at the edge of the middle section. Change the line to 
+```AutoHotkey
+If (TryFindImage("moveon", ScreenSplit.Middle, ScreenSplit.Bottom, 0.2, 0.3, DefaultVariation))
+```
+to increase the search area from Middle to Bottom.
+
