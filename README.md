@@ -80,38 +80,36 @@ The configurations are:
 ```AutoHotkey
 SelectParty=yes ;Select party based on combat state text file and rules in CombatRules
 ConsiderFatigue=yes
+DefaultPartyNo := 1 ;default party number when everything else failed
 FatigueThreshold := 35
-CombatRules := {"Bahamut":[3,1,2], "Ramza": [3,2,1], "Ravus": [1,3,2], "Twintania": [1,2,3], "Vajra": [1,2,3], "Wendigo": [2,1,3]
-,"Alexander": [2,3,1], "Behemoth": [3,1,2], "Brynhildr": [2,1,3], "Byblos": [2,1,3], "Chaos": [3,1,2], "Leviathan":[2,1,3]
-,"Marilith": [3,1,2], "Nidhogg": [2,1,3], "Ultima Weapon":[1,2,3]
-,"Adamanchelid": [2,1,3], "Atomos": [1,3,2], "Black Waltz No.2": [3,1,2], "Deathclaw": [1,2,3], "Green Dragon": [1,2,3]
-,"Guard Scorpion": [2,1,3], "Iron Giant": [1,3], "Lunasaur": [2,1,3], "Red Giant & Catoblepas": [1,3]
-,"Elvoret": [2,1,3]}
 SelectPartyOffsetY=60 ;offset click to reach center for party selection before Battle 
 ```
-The script also consider the party selection based on the state file supplied by other proxy app e.g. RK Squared, in the format of CSV
-```
-Bahamut,50,35,0
-enemy,totalFatigue1,totalFatigue2,totalFatigue3
-```
-Representing enemy name, first party total fatigue, second party total fatigue, third party total fatigue
-
-The script also defines the __CombatRules__ with format __"Enemy name":= \[order of party number\]__, 
+If you want to switch party depending on encountered enemy, locate line start with **SetupCombatRules** and notice a list of pre-configured rules. The script defines the __CombatRules__ with the format __CombatRules["Enemy name"]:= \[order of party number\]__, 
 ```AutoHotkey
-CombatRules := {"Bahamut":[3,1,2]}
+CombatRules["Bahamut"] := [3,1,2]
 ```
-This example configured that the 3rd party will be first preference followed by 1st and 2nd. Remove the party number from the \[\] if do not wish to be selected (e.g. Red Giant absorb lightning). If __ConsiderFatigue__ set to yes, then it would read party fatigue from the state file and compare with the __FatigueThreshold__.
-It then select the next best party from the order, default to first party when all party fatigue check failed.
+This example configured that the 3rd party will be first preference followed by 1st and 2nd. You can change each enemy rules by changing the order of the party number.
+Remove the party number from the \[\] if do not wish to be selected (e.g. Red Giant absorb lightning). 
 
 The existing rules used following parties, you can alter rules according to your party setup and enemy weakness:
 1. Holy Mage
 2. Lightning Physical
 3. Earth Mixed
 
-### Troubleshooting the script
-Download one of the debugger http://fincs.ahk4.net/scite4ahk/
-Debug the script in the debugger and press run. It should print some description about what the script is doing. For e.g. which images it couldnt find.
+If __ConsiderFatigue__ set to yes, then it would read party fatigue from the state file and compare with the __FatigueThreshold__. It then select the next best party from the order, default to first party when all party fatigue check failed.
 
+The state file supplied by other proxy app e.g. RK Squared, will have the format of CSV
+```
+Bahamut,50,35,0
+enemy,totalFatigue1,totalFatigue2,totalFatigue3
+```
+Representing enemy name, first party total fatigue, second party total fatigue, third party total fatigue
+## Troubleshooting the script
+Download one of the debugger http://fincs.ahk4.net/scite4ahk/. 
+
+Debug the script in the debugger and press run. 
+
+It should print some description about what the script is doing. For e.g. which images it couldnt find.
 ## Troubleshooting FindText
 Since the script used a set of error rate and image text targeted to the developer machine (1920*1080), you may have issue finding the image or finding more image than you need with FindText. The script also splits the emulator into 3 vertical sections (Top, Middle, Bottom) to limit the search area and speed up the search. Sometimes the button could be at the edge of the section and get ignored because of the search area.
 

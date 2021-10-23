@@ -56,19 +56,21 @@ ChestTypes := ["leftchest", "centerchest", "rightchest"]
 
 SelectParty=yes ;Select party based on combat state text file and rules in CombatRules
 ConsiderFatigue=yes
+DefaultPartyNo := 1 ;default party number when everything else failed
 FatigueThreshold := 35
-CombatRules := {"Bahamut":[3,1,2], "Ramza": [3,2,1], "Ravus": [1,3,2], "Twintania": [1,2,3], "Vajra": [1,2,3], "Wendigo": [2,1,3]
-,"Alexander": [2,3,1], "Behemoth": [3,1,2], "Brynhildr": [2,1,3], "Byblos": [2,1,3], "Chaos": [3,1,2], "Leviathan":[2,1,3]
-,"Marilith": [3,1,2], "Nidhogg": [2,1,3], "Ultima Weapon":[1,2,3]
-,"Adamanchelid": [2,1,3], "Atomos": [1,3,2], "Black Waltz No.2": [3,1,2], "Deathclaw": [1,2,3], "Green Dragon": [1,2,3]
-,"Guard Scorpion": [2,1,3], "Iron Giant": [3,1], "Lunasaur": [2,1,3], "Red Giant & Catoblepas": [1,3]
-,"Elvoret": [2,1,3], "Magic Pot": [2,3,1]}
 SelectPartyOffsetY=60 ;offset click to reach center for party selection before Battle 
 CombatFile=%StateFileDir%combat.txt 
 
 ;Script begins paused, comment out if not required
-;Pause 
-Gosub, SetupImageText
+;Pause
+If (SelectParty="yes")
+{
+	Gosub SetupCombatRules
+}
+If (SearchMethod == "FindText")
+{
+	Gosub, SetupImageText
+}
 Gosub, TheMainLoop
 
 F1::
@@ -362,7 +364,7 @@ If (ErrorLevel = 0)
 Return
 
 ClickOnSelectParty:
-SelectedPartyNo := 1 ;always default to 1st party
+SelectedPartyNo := DefaultPartyNo ;always default to 1st party
 If(SelectParty="yes")
 {
 	FileReadLine, Contents, %CombatFile%, 1
@@ -512,6 +514,85 @@ TryFindImage(imageName, startSection, endSection, err1, err2, n) {
 	
 	return found
 }
+
+SetupCombatRules:
+CombatRules := {}
+;S2
+CombatRules["Unidentified MA"] := [2,3]
+CombatRules["Meltigemini"] := [2,1,3]
+CombatRules["Odin"] := [2,3,1]
+CombatRules["Octomammoth"] := [2,3,1]
+CombatRules["Ogopogo"] := [2,1,3]
+CombatRules["Lani & Scarlet Hair"] := [3,2,1]
+CombatRules["Adel"] := [3,2,1]
+CombatRules["King Behemoth"] := [3,2,1]
+CombatRules["Titan"] := [1,2]
+CombatRules["Firion"] := [3,2,1]
+
+;S1
+CombatRules["Garuda Interceptor"] := [2,1]
+CombatRules["General"] := [3,2,1]
+CombatRules["Firemane"] := [2,3,1]
+CombatRules["Scared & Minotaur"] := [2,1]
+CombatRules["Plant Brain"] := [2,1,3]
+CombatRules["Adamantoise"] := [2,1]
+CombatRules["Catastrophe"] := [1,2,3]
+CombatRules["Angel Penance"] := [3,2,1]
+CombatRules["Earth Dragon"] := [1,2]
+CombatRules["Death Machine"] := [1,2,3]
+CombatRules["Storm Dragon"] := [2,3,1]
+CombatRules["Big Horns"] := [3,2,1]
+CombatRules["Carbuncle"] := [2,3]
+CombatRules["Gizamaluke"] := [2,3,1]
+CombatRules["Black Flan"] := [1,3,2]
+CombatRules["Diepvern"] := [2,1]
+CombatRules["Dark Valefor"] := [2,1,3]
+CombatRules["Echidna"] := [2,1]
+CombatRules["Lich & Vampire"] := [1,2]
+CombatRules["Adamanchelid"] := [2,1,3]
+CombatRules["Black Waltz 2"] := [3,1,2]
+CombatRules["Lunasaurs"] := [2,3]
+CombatRules["Red Giant & Catoblepas"] := [3,1]
+CombatRules["Bahamut"] := [3,1,2]
+CombatRules["Twintania"] := [1,2,3]
+CombatRules["Vajra"] := [1,2,3]
+CombatRules["Byblos"] := [2,1,3]
+CombatRules["Chaos"] := [3,1,2]
+CombatRules["Leviathan"] := [2,1,3]
+
+CombatRules["Ultima Weapon"]=[1,2,3]
+CombatRules["Kraken & Sharks"] := [3,2,1]
+CombatRules["Elvoret"] := [2,1,3]
+CombatRules["Tiamat"] := [3,1]
+CombatRules["Lesser Tiger"] := [2,3,1]
+
+;Multiple
+CombatRules["Adrammelech"] := [3,2,1]
+CombatRules["Diablos"] := [1,2]
+CombatRules["Skull Dragon"] := [1]
+CombatRules["Royal Ripeness"] := [3,1,2]
+CombatRules["Bandersnatches"] := [3,2,1]
+
+CombatRules["Faeryl"] := [2,3,1]
+CombatRules["Green Dragon"] := [1,2,3]
+CombatRules["Guard Scorpion"] := [2,1,3]
+CombatRules["Iron Giant"] := [3,1]
+CombatRules["Deathclaws"] := [1,2,3]
+
+CombatRules["Behemoth"] := [3,1,2]
+CombatRules["Brynhildr"] := [2,1,3]
+CombatRules["Marilith"] := [3,1,2]
+
+CombatRules["Alexander"] := [2,3,1]
+CombatRules["Atomos"] := [1,2,3]
+CombatRules["Ramza"] := [3,2,1]
+CombatRules["Ravus"] := [1,3,2]
+CombatRules["Wendigo"] := [2,1,3]
+CombatRules["Nidhogg"] := [2,1,3]
+CombatRules["Rufus"] := [3,2,1]
+
+CombatRules["Magic Pot"] := [2,3,1]
+Return
 
 SetupImageText:
 ImageText := {}
