@@ -14,16 +14,23 @@ If you want to make your own changes to the script open FFRK Labyrinth.ahk with 
 
 The basic configuration are 
 ```AutoHotkey
-SearchMethod:="ImageSearch" ;use FindText or ImageSearch
 EmulatorAppName:= "NoxPlayer" ;set this to the name of the emulator app
-StateFileDir=C:\Users\{User}\AppData\Roaming\RK Squared\state\ ;change the path to your local RK Squared installation
+ScreenshotShorcut:= "{Control}7" ;shortcut to take a screenshot when encounter shimmering painting
+WidthOffset:=40 ;offset to exclude emulator right sidebar 
+StateFileDir=C:\Users\Amanda\AppData\Roaming\RK Squared\state\ ;change the path to your local RK Squared installation
+
+SearchMethod:="ImageSearch" ;use FindText or ImageSearch
+DefaultVariation:="*80" ; variation for ImageSearch
+
 DefaultSleepTime=1500 ;reduce to increase response time
 LongSleepTime=10000 ;set wait for n seconds x 1000 during battle before check again, to reduce CPU time
-CrashScanWhenElapsedSec:=120 ;interval before start scanning for crash 
+CrashScanWhenElapsedSec:=120 ;interval seconds before startSection scanning for crash
+ReturnMouse=yes ;Returns the mouse to the position it was at before clicking on the emulator
 ```
-Specify your emulator name to allow script to move it to the top left and calculate the position to scan. You can configure the sleep time to improve the responsiveness or increase it when you expect slower nextwork.
-Customise the crash scan interval **CrashScanWhenElapsedSec** if you experience crash frequently. Setup the **StateFileDir** if you used RK Squared proxy to identify treasure chest content, 
-select party, or skip painting.
+Specify your emulator name according to the TaskManager process to allow script to move it to the top left and calculate the position to scan.
+You can configure the sleep time to improve the responsiveness or increase it when you expect slower nextwork.
+Customise the crash scan interval **CrashScanWhenElapsedSec** if you experience crash frequently. 
+Setup the **StateFileDir** if you used RK Squared proxy to identify treasure chest content, select party, or skip painting.
 
 Depending if you used **FindText** or **ImageSearch** to search for FFRK click area:
 ### ImageSearch
@@ -53,15 +60,34 @@ PaintingPriority.Push("painting_portal")
 PaintingPriority.Push("painting_boss")
 
 OpenSealedDoor=yes ;yes or no , must be provide
-SkipPainting=yes ;skip painting skip with proxy state file
-SkipExploreTreasureCount=2 ;skip explore depending on at min how many treasure behind, set 0 to not skip
-SkipCombatExploreCount=0 ;skip combat and end floor early, depending at max how many explore to ignore (also check no treasure left), set -1 to not skip 
+SkipPainting=yes ;skip painting toggle
+SkipExploreTreasureCount=0 ;skip explore depending on at min how many treasure behind, set 0 to not skip, should not skip in season 2
+EndFloorWhenRemaining=3 ;end floor early depending on remaining painting count, also check no explore and treasure in behind, set 1 to not skip 
+TryAvoidEnemy=yes ; try to avoid certain enemy in painting selection (not possible in exploration or when all row same enemy)
 ```
-Configure the **SkipPainting** to whether skip to Exploration Painting (if there are treasure behind) or Combat Painting (go to portal early if no more treasure or exploration). **SkipExploreTreasureCount** is the minimum number of treasure painting behind before start skipping exploration, set 0 not skip exploration and take chance. **SkipCombatExploreCount** is the maximum exploration behind allowed to be ignored before it go to portal/boss early, set -1 if you dont want skip combat.
+Configure the **SkipPainting** to whether skip to Exploration Painting (if there are treasure behind) or Combat Painting (go to portal early if no more treasure or exploration). **SkipExploreTreasureCount** is the minimum number of treasure painting behind before start skipping exploration, set 0 not skip exploration and take chance. **EndFloorWhenRemaining** is depending on remaining painting countbefore it go to portal/boss early, set 1 if you dont want skip painting.
+
+**TryAvoidEnemy** when configured will try to avoid enemy according to the rules **SetupAvoidEnemy** near the end of the file. Add another line for the enemy you want the script to avoid when selecting combatant painting.
+
+```AutoHotkey
+SetupAvoidEnemy:
+AvoidEnemyRules := []
+AvoidEnemyRules.Push("Diablos")
+AvoidEnemyRules.Push("Atomos")
+AvoidEnemyRules.Push("Lunasaurs")
+AvoidEnemyRules.Push("Unidentified MA")
+; add another line for another enemy name
+```
+The script also automatically
+- prioritise restoration painting over onslaught when Total Party Fatigue hit 75 (means each party member fatigue at average 5)
+- prioritise Shimmering Painting (Exploration and Combat only) over other painting except Treasure 
+
 The state file wil have following format
 ```
-8,true,false,true,0,1
+7,true,false,true,0,2
+6_false,12_false_Alexander,12_false_Ogopogo
 remaining,hasPortal,hasMaster,canSkipExploration,futureTreasure,futureExploration
+left,center,right
 ```
 ### Chest
 Configurations are:
@@ -110,6 +136,10 @@ Download one of the debugger http://fincs.ahk4.net/scite4ahk/.
 Debug the script in the debugger and press run. 
 
 It should print some description about what the script is doing. For e.g. which images it couldnt find.
+
+If there is mouse movement but not able to click on the emulator, consider running the script as administrator.
+
+Some emulator (Memu) does not allow the click to occur too frequent, locate the failing ClickOnFoundImage and see if you need to increase the **Sleep** delay before or after it.
 ## Troubleshooting FindText
 Since the script used a set of error rate and image text targeted to the developer machine (1920*1080), you may have issue finding the image or finding more image than you need with FindText. The script also splits the emulator into 3 vertical sections (Top, Middle, Bottom) to limit the search area and speed up the search. Sometimes the button could be at the edge of the section and get ignored because of the search area.
 

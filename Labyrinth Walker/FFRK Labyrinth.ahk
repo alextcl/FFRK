@@ -10,18 +10,24 @@ SendMode Input ;More reliable sending mode
 
 DebugScript:=false
 TheAlarm=%A_WinDir%\Media\Alarm01.wav
-SearchMethod:="ImageSearch" ;use FindText or ImageSearch
-DefaultVariation:="*80"
+
 EmulatorAppName:= "NoxPlayer" ;set this to the name of the emulator app
+ScreenshotShorcut:= "{Control}7" ;shortcut to take a screenshot when encounter shimmering painting
+WidthOffset:=40 ;offset to exclude emulator right sidebar 
 StateFileDir=C:\Users\Amanda\AppData\Roaming\RK Squared\state\ ;change the path to your local RK Squared installation
+
+SearchMethod:="ImageSearch" ;use FindText or ImageSearch
+DefaultVariation:="*80" ; variation for ImageSearch
+
 DefaultSleepTime=1500 ;reduce to increase response time
 LongSleepTime=10000 ;set wait for n seconds x 1000 during battle before check again, to reduce CPU time
 CrashScanWhenElapsedSec:=120 ;interval seconds before startSection scanning for crash
+ReturnMouse=yes ;Returns the mouse to the position it was at before clicking on the emulator
 
-WinMove, %EmulatorAppName%, , 0, 0, ;
+WinMove, %EmulatorAppName%, , 0, 0, 
 WinGetPos, TargetX, TargetY, TargetW, TargetH, %EmulatorAppName%
 ;Limit the search area for ImageSearch. Use %A_ScreenWidth% and %A_ScreenHeight% if you want to search the whole screen
-SearchWidth:=TargetW
+SearchWidth:=TargetW - WidthOffset
 SearchHeight:=TargetH
 ScreenSplit := {} ; split the screen to 3 section to speed up search, do not change this
 ScreenSplit["Top"] := { X: TargetX, Y: TargetY, Width: SearchWidth, Height: Ceil(SearchHeight/3) }
@@ -34,8 +40,8 @@ ScreenSplit["Bottom"] := { X: TargetX, Y: (TargetY + Ceil(2 * (SearchHeight/3)))
 PaintingPriority := []
 PaintingPriority.Push("painting_treasure")
 PaintingPriority.Push("painting_exploration")
-PaintingPriority.Push("painting_restoration")
 PaintingPriority.Push("painting_onslaught")
+PaintingPriority.Push("painting_restoration")
 PaintingPriority.Push("painting_combatred")
 PaintingPriority.Push("painting_combatorange")
 PaintingPriority.Push("painting_combatgreen")
@@ -44,9 +50,10 @@ PaintingPriority.Push("painting_boss")
 
 OpenSealedDoor=yes ;yes or no , must be provide
 SkipPainting=yes ;skip painting toggle
-SkipExploreTreasureCount=2 ;skip explore depending on at min how many treasure behind, set 0 to not skip
-SkipCombatExploreCount=0 ;skip combat and end floor early, depending at max how many explore to ignore (also check no treasure left), set -1 to not skip 
+SkipExploreTreasureCount=0 ;skip explore depending on at min how many treasure behind, set 0 to not skip, should not skip in season 2
+EndFloorWhenRemaining=3 ;end floor early depending on remaining painting count, also no explore and treasure in behind, set 1 to not skip 
 PaintingFile=%StateFileDir%painting.txt
+TryAvoidEnemy=yes ; try to avoid certain enemy in painting selection (not possible in exploration or when all row same enemy)
 BossCombat:=HasValue(PaintingPriority, "painting_boss")
 
 OpenChest=yes ;Open chest based on chest state text file
@@ -71,6 +78,11 @@ If (SearchMethod == "FindText")
 {
 	Gosub, SetupImageText
 }
+If (TryAvoidEnemy="yes")
+{
+	Gosub, SetupAvoidEnemy
+}
+Gosub, SetupPaintingOrder
 Gosub, TheMainLoop
 
 F1::
@@ -86,7 +98,19 @@ ExitApp
 Return
 
 ClickOnFoundImage:
-FindText().Click(FoundX, FoundY, "L")
+MouseGetPos, ReturnX, ReturnY
+WinGet, Active_ID, ID, A
+If (SearchMethod == "FindText")
+	FindText().Click(FoundX, FoundY, "L")
+else
+{
+	Click, %FoundX%, %FoundY%, Left
+}
+If (ReturnMouse="yes")
+{
+	MouseMove, %ReturnX%, %ReturnY%
+	WinActivate ahk_id %Active_ID%
+}
 Return
 
 ClickOnOK:
@@ -156,14 +180,14 @@ Loop
 		;Only use the painting priority loop when inside main labyrinth to prevent the script from cycling too early and choosing the wrong painting.
 		Sleep DefaultSleepTime
 		IsLastFloor := false
-		Gosub, PaintingPriority
+		Gosub, SelectPaintingPriority
 	}
 	else If (TryFindImage("labyrinth_purple", ScreenSplit.Top, ScreenSplit.Top, 0.1, 0.1, DefaultVariation))
 	{
 		;Last floor is purple. Only use the painting priority loop when inside main labyrinth to prevent the script from cycling too early and choosing the wrong painting.
 		Sleep DefaultSleepTime
 		IsLastFloor := true
-		Gosub, PaintingPriority
+		Gosub, SelectPaintingPriority
 	} 
 	else If (TryFindImage("dungeoncomplete", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.1, DefaultVariation))
 	{
@@ -182,63 +206,33 @@ Loop
 }
 Return
 
-PaintingPriority:
-PaintingState := 
+SelectPaintingPriority:
 If (SkipPainting="yes")
 {
-	FileReadLine, Contents, %PaintingFile%, 1
-	If (ErrorLevel = 0)
+	TopPainting := GetTopPainting()
+	If (IsObject(TopPainting))
 	{
-		PaintingState := StrSplit(Contents, ",")	
-		Remaining :=  PaintingState[1]
-		HasPortal := PaintingState[2]=="true"
-		HasMaster := PaintingState[3]=="true"
-		CanSkipExplore := PaintingState[4]=="true"
-		FutureTreasure := PaintingState[5]
-		FutureExplore := PaintingState[6]
-		CanEndFloor := HasPortal==true or (HasMaster==true and BossCombat==true)
+		Painting := TopPainting.painting
+		OutputDebug, % "Select painting " . Painting . " at " . TopPainting.position . " order " . TopPainting.order
+		if (TopPainting.special)
+		{
+			WinActivate, %EmulatorAppName%
+			Send %ScreenshotShorcut%
+			Sleep (DefaultSleepTime * 3)
+		}
+		If (TryFindImage(Painting, ScreenSplit.Middle, ScreenSplit.Middle, 0.2, 0.2, DefaultVariation, TopPainting.position))
+		{
+			OutputDebug, %A_Now%: Found %Painting% 
+			Gosub, ClickOnFoundImage
+			Sleep 600
+			Gosub, ClickOnFoundImage
+			Sleep DefaultSleepTime
+			Return
+		}
 	}
 }
 for index, Painting in PaintingPriority 
 {
-	If (IsObject(PaintingState))
-	{
-		If (Painting == "painting_exploration")
-		{
-			If (SkipExploreTreasureCount > 0 and FutureTreasure >= SkipExploreTreasureCount)
-			{ 
-				If (CanSkipExplore==true and IsLastFloor==false)
-				{
-					OutputDebug, %A_Now%: Skip explore futureT: %FutureTreasure% skipT: %SkipExploreTreasureCount%
-					If DebugScript
-					{
-						MsgBox, %A_Now%: Skip explore futureT: %FutureTreasure% skipT: %SkipExploreTreasureCount%
-						Break
-					}				
-					else
-						Continue
-				}
-			}
-		} 
-		else If (InStr(Painting, "combat"))
-		{
-			If (CanEndFloor==true and Remaining <= 9)
-			{
-				If (FutureTreasure = 0 and (FutureExplore <= SkipCombatExploreCount))
-				{
-					OutputDebug, %A_Now%: Skip combat futureT: %FutureTreasure% futureE: %FutureExplore% skipE:%SkipCombatExploreCount%
-					If DebugScript
-					{
-						MsgBox, %A_Now%: Skip combat futureT: %FutureTreasure% futureE: %FutureExplore% skipE:%SkipCombatExploreCount%
-						Break
-					}
-					else
-						Continue
-				}
-			}
-		}
-	}
-
 	If (TryFindImage(Painting, ScreenSplit.Middle, ScreenSplit.Middle, 0.2, 0.2, DefaultVariation))
 	{
 		OutputDebug, %A_Now%: Found %Painting% 
@@ -250,6 +244,137 @@ for index, Painting in PaintingPriority
 	}
 }
 Return
+
+GetTopPainting()
+{
+	global PaintingFile, PaintingOrder, SkipExploreTreasureCount, EndFloorWhenRemaining, MinCombatOrder, AvoidEnemyRules, IsLastFloor, TotalPartyFatigue, FatigueThreshold
+	NextPainting := []
+	if (!FileExist(PaintingFile))
+	{
+		return
+	}
+	Loop, read, %PaintingFile%
+	{
+		if(A_Index > 2)
+			Break
+
+		if(A_Index = 1)
+		{
+			PaintingState := StrSplit(A_LoopReadLine, ",")	
+			Remaining :=  PaintingState[1]
+			HasPortal := PaintingState[2]=="true"
+			HasMaster := PaintingState[3]=="true"
+			CanSkipExplore := PaintingState[4]=="true"
+			FutureTreasure := PaintingState[5]
+			FutureExplore := PaintingState[6]
+		}
+		else
+		{
+			PaintingCards := StrSplit(A_LoopReadLine, ",")
+			for index, Card in PaintingCards
+			{
+				CardInfo := StrSplit(Card, "_")
+				NextPainting[index] := { order: 100, position: index, special: false }
+				If (Remaining <= 2){
+					NextPainting[index].position := 1
+				}
+
+				Switch CardInfo[1]
+				{
+					Case "11":
+						NextPainting[index].painting := "painting_combatgreen"
+					Case "12":
+						NextPainting[index].painting := "painting_combatorange"
+					Case "13":
+						NextPainting[index].painting := "painting_combatred"
+					Case "2":
+						NextPainting[index].painting := "painting_boss"
+					Case "3":
+						NextPainting[index].painting := "painting_treasure"
+					Case "4":
+						NextPainting[index].painting := "painting_exploration"
+					Case "5":
+						NextPainting[index].painting := "painting_onslaught"
+					Case "6":
+						NextPainting[index].painting := "painting_portal"
+					Case "7":
+						NextPainting[index].painting := "painting_restoration"	
+				} 
+
+				If (PaintingOrder.HasKey(NextPainting[index].painting))
+				{
+					NextPainting[index].order := PaintingOrder[NextPainting[index].painting]
+				}
+				
+				If (NextPainting[index].painting = "painting_exploration")
+				{
+					If (CardInfo[2]=="true")
+					{
+						NextPainting[index].order := PaintingOrder["painting_treasure"] + 1
+						NextPainting[index].special := true
+						Continue
+					}
+
+					If (SkipExploreTreasureCount > 0 and FutureTreasure >= SkipExploreTreasureCount)
+					{ 
+						If (IsLastFloor==false)
+						{
+							OutputDebug, %A_Now%: Skip explore futureT: %FutureTreasure% skipT: %SkipExploreTreasureCount%
+							If DebugScript
+							{
+								MsgBox, %A_Now%: Skip explore futureT: %FutureTreasure% skipT: %SkipExploreTreasureCount%
+								Continue
+							}				
+							else
+								NextPainting[index].order := PaintingOrder["painting_portal"] - 1
+						}
+					}
+				}
+				else If (NextPainting[index].painting = "painting_boss" or NextPainting[index].painting = "painting_portal")
+				{
+					If (Remaining <= EndFloorWhenRemaining and FutureTreasure = 0 and FutureExplore = 0)
+					{
+						OutputDebug, %A_Now%: Skip to endfloor futureT: %FutureTreasure% futureE: %FutureExplore% remaining: %Remaining% 
+						If DebugScript
+						{
+							MsgBox, %A_Now%: Skip to endfloor futureT: %FutureTreasure% futureE: %FutureExplore% remaining: %Remaining%
+							Continue
+						}
+						else
+							NextPainting[index].order := MinCombatOrder - 1
+					}
+				}
+				else If (CardInfo[1] > 10)
+				{
+					If (CardInfo[2]=="true")
+					{
+						NextPainting[index].order := PaintingOrder["painting_treasure"] + 1
+						NextPainting[index].special := true
+						Continue
+					}
+
+					CombatEnemy := CardInfo[3]
+					If (HasValue(AvoidEnemyRules, CombatEnemy))
+					{
+						OutputDebug, %A_Now%: avoid enemy %CombatEnemy% combatant painting
+						NextPainting[index].order := PaintingOrder["painting_portal"] - 2
+					}
+				}
+				else if (NextPainting[index].painting = "painting_restoration")
+				{
+					TotalThreshold = (FatigueThreshold - 10) * 3;
+					If (TotalPartyFatigue >= TotalThreshold)
+					{
+						NextPainting[index].order := PaintingOrder["painting_onslaught"] - 1
+					}
+				}
+			}
+			SortedPainting := SortByKey(NextPainting, "order")
+			return SortedPainting[1]
+		}
+	}
+	return
+}
 
 ClickOnInsidePainting:
 If (TryFindImage("go", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
@@ -295,9 +420,6 @@ else If (TryFindImage("inside_treasurepainting", ScreenSplit.Top, ScreenSplit.To
 			} 
 		}
 	}
-} 
-else {
-	return 
 }
 Return 
 
@@ -365,6 +487,7 @@ Return
 
 ClickOnSelectParty:
 SelectedPartyNo := DefaultPartyNo ;always default to 1st party
+TotalPartyFatigue := 0
 If(SelectParty="yes")
 {
 	FileReadLine, Contents, %CombatFile%, 1
@@ -372,6 +495,10 @@ If(SelectParty="yes")
 	{
 		CombatRow := StrSplit(Contents, ",")
 		Enemy := CombatRow[1]
+		Loop 3
+		{
+			TotalPartyFatigue := TotalPartyFatigue + CombatRow[A_Index+1]
+		}
 		If (CombatRules.HasKey(Enemy))
 		{
 			PartyOrder := CombatRules[Enemy]
@@ -395,7 +522,7 @@ If (TryFindImage("party" . SelectedPartyNo, ScreenSplit.Top, ScreenSplit.Bottom,
 {
 	FoundY := FoundY + SelectPartyOffsetY
 	Gosub, ClickOnFoundImage
-	Sleep 200
+	Sleep 300
 
 	If (TryFindImage("go", ScreenSplit.Bottom, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
 	{
@@ -454,6 +581,12 @@ else If (TryFindImage("exploring", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 
 	Sleep DefaultSleepTime
 	ContinueCrashScan := false
 }
+else If (TryFindImage("labydungeon", ScreenSplit.Middle, ScreenSplit.Middle, 0.1, 0.2, DefaultVariation))
+{
+	Gosub, ClickOnFoundImage
+	Sleep DefaultSleepTime
+	ContinueCrashScan := false
+}
 else If (TryFindImage("backtitle", ScreenSplit.Middle, ScreenSplit.Bottom, 0.1, 0.2, DefaultVariation))
 {
 	Gosub, ClickOnFoundImage
@@ -492,17 +625,43 @@ HasValue(haystack, needle) {
     return false
 }
 
-TryFindImage(imageName, startSection, endSection, err1, err2, n) {
+SortByKey(arr, key, reverse := false) {
+   ArrMin := [], ArrMax := []
+   Random, pivot, 1, arr.Count()
+   for k, v in arr {
+      if (k = pivot)
+         continue
+      
+      array := (!reverse ? arr[k, key] < arr[pivot, key] : arr[k, key] > arr[pivot, key]) ? "ArrMin" : "ArrMax"
+      %array%.Push(v)
+   }
+   for k, v in ["ArrMin", "ArrMax"]
+      (%v%.Length() > 1 && %v% := SortByKey(%v%, key, reverse))
+
+   ArrMin.Push(arr[pivot], ArrMax*)
+   Return ArrMin
+}
+
+TryFindImage(imageName, startSection, endSection, err1, err2, n, position := 1, splitSection := 3) {
 	global FoundX, FoundY, ImageText, SearchMethod
 	found := false
+	StartX := startSection.X
+	EndX := endSection.Width
+	if (position > 1)
+	{
+		SplitSectionSize := endSection.Width/splitSection
+		EndX :=  Ceil(SplitSectionSize * position)
+		StartX := Floor(EndX - SplitSectionSize)
+	}
 	If (SearchMethod == "FindText")
 	{
-		If (ok:=FindText(FoundX, FoundY, startSection.X, startSection.Y, endSection.Width, endSection.Height, err1, err2, ImageText[imageName]))
+		OkFound := FindText(FoundX, FoundY, StartX, startSection.Y, EndX, endSection.Height, err1, err2, ImageText[imageName])
+		If (OkFound)
 			found := true
 	}
 	else
 	{
-		ImageSearch, FoundX, FoundY, startSection.X, startSection.Y, endSection.Width, endSection.Height, %n% %A_ScriptDir%\images\%imageName%.png
+		ImageSearch, FoundX, FoundY, StartX, startSection.Y, EndX, endSection.Height, %n% %A_ScriptDir%\images\%imageName%.png
 		If (ErrorLevel = 0)
 			found := true
 	}
@@ -510,10 +669,25 @@ TryFindImage(imageName, startSection, endSection, err1, err2, n) {
 	If (found == true)
 		OutputDebug found image %imageName% at %FoundX%, %FoundY%
 	else
-		OutputDebug % "Unable to find image " . imageName . " at area " . startSection.X . "," . startSection.Y . "," . endSection.Width . "," . endSection.Height . " with the err " . err1 . "," . err2 
+		OutputDebug % "Unable to find image " . imageName . " at area " . StartX . "," . startSection.Y . "," . EndX . "," . endSection.Height . " with the err " . err1 . "," . err2 
 	
 	return found
 }
+
+SetupPaintingOrder:
+PaintingOrder := {}
+MinCombatOrder := PaintingPriority.Count() * 10
+for index, Painting in PaintingPriority
+{
+	PaintingOrder[Painting] := index * 10
+	If (InStr(Painting, "combat"))
+	{
+		If (MinCombatOrder > PaintingOrder[Painting]) {
+			MinCombatOrder := PaintingOrder[Painting]
+		}
+	}
+}
+Return
 
 SetupCombatRules:
 CombatRules := {}
@@ -526,6 +700,7 @@ CombatRules["Ogopogo"] := [2,1,3]
 CombatRules["Lani & Scarlet Hair"] := [3,2,1]
 CombatRules["Adel"] := [3,2,1]
 CombatRules["King Behemoth"] := [3,2,1]
+CombatRules["Rufus"] := [3,2,1]
 CombatRules["Titan"] := [1,2]
 CombatRules["Firion"] := [3,2,1]
 
@@ -560,7 +735,6 @@ CombatRules["Byblos"] := [2,1,3]
 CombatRules["Chaos"] := [3,1,2]
 CombatRules["Leviathan"] := [2,1,3]
 
-CombatRules["Ultima Weapon"]=[1,2,3]
 CombatRules["Kraken & Sharks"] := [3,2,1]
 CombatRules["Elvoret"] := [2,1,3]
 CombatRules["Tiamat"] := [3,1]
@@ -574,7 +748,7 @@ CombatRules["Royal Ripeness"] := [3,1,2]
 CombatRules["Bandersnatches"] := [3,2,1]
 
 CombatRules["Faeryl"] := [2,3,1]
-CombatRules["Green Dragon"] := [1,2,3]
+CombatRules["Green Dragon"] := [2,1,3]
 CombatRules["Guard Scorpion"] := [2,1,3]
 CombatRules["Iron Giant"] := [3,1]
 CombatRules["Deathclaws"] := [1,2,3]
@@ -589,9 +763,19 @@ CombatRules["Ramza"] := [3,2,1]
 CombatRules["Ravus"] := [1,3,2]
 CombatRules["Wendigo"] := [2,1,3]
 CombatRules["Nidhogg"] := [2,1,3]
-CombatRules["Rufus"] := [3,2,1]
+CombatRules["Ultima Weapon"]=[1,2,3]
 
 CombatRules["Magic Pot"] := [2,3,1]
+Return
+
+
+SetupAvoidEnemy:
+AvoidEnemyRules := []
+AvoidEnemyRules.Push("Diablos")
+AvoidEnemyRules.Push("Atomos")
+AvoidEnemyRules.Push("Lunasaurs")
+AvoidEnemyRules.Push("Unidentified MA")
+; add another line for different enemy name
 Return
 
 SetupImageText:
@@ -629,6 +813,7 @@ ImageText.usekey:="|<>*125$31.zzzzzjlzztnkzzwtsTzzwMDzzyUY70bEm30nAtQaN7wsFAXyMA
 ImageText.open:="|<>*145$41.zzzzzzzzzzzzzzzzzzzzz0Tzzzzw0TzzzzlsTzzzz7wTzzzyDskD1UQztUA30NznCNmAnzaQXYxXyAs09tbwtnDnn3Vn6Tbb07US1jDUz1yDSzzyTzzzzzwzzzzzztzzzzzznzzzzzzzzzzw"
 
 ImageText.enter:="|<>*152$41.zzzzzzzk3zzzzzUDzzzzz7zzzzzyTzyTzzwzUQ630s30E821k6QnnaTbwtbbBzDtnD0PyTnaSTrwzbAwzjs1CQA3Ts6QwwCzzzzzzzw"
+ImageText.smallenter:="|<>*154$32.0TzzzkDzzzwzzrzzDUMMM08aQW8yRbAbDbNk9ntqQyQTRZ4b07QMNs"
 ImageText.party1:="||<>*146$51.0000000000000000000000000U0000000A00000001U0000000A00040001UkAFxUE0ATVjTy701bwDNwkk0A1lkA7C01UCA1UNU0A7lUA3w01XiA1UD00AtlUA1s01aCA1k700AzlU7kk01XyA0SC00A00001U0000000Q000000030004"
 ImageText.party2:="|<>*143$10.0001kTnzAC0s1UC0k30M3UA1UC1zrz00000U"
 ImageText.party3:="|<>*143$11.000000y3y0S0Q0s3UT0S0S0Q0M0k3Xy7s100004"
@@ -644,6 +829,7 @@ ImageText.ok2:="|<>*156$31.zzzzzy1znyQ0DsyA01wSADkyCCDyD6DDzXW7bzkk7rzsM7vzwA3xz
 ImageText.ffrkapp:="|<>*161$31.0000000000000000000000000000000000009i0AU6PkDs1aQM65wmSl0yP6skPjWzs/rXLw3rssy0rwQS0zv7PUzz3zsTylxwzzszyLzsbjdzsDzkDy3jw7zVzyTzlzyDzlzy3xsTC0OM320000000000000000E"
 ImageText.play:="|<>*146$31.zzzzzs37zzw0XzzyC1zzz70zzzX4ENlk284Ns77nAwTblYyDnUsT7taQDnymDDtzM3bzzzzbzzzznzzzzny"
 ImageText.exploring:="|<>*67$21.DwD3zXkzyQ3zX87wN4zXynwTqTXkzw07zk0y7zzkjzy407zU0Tw03TU0Pw03TU9Pw1vTVsPwC4"
+ImageText.labydungeon:="|<>*114$37.0zkA60UTs60087s70043w3U030w3k31US1s3ts61w3zw30y1zz00z0zzU0TUTzs0TkDzw0Ds7zz0Dw3zzU7y1xzs3z0yTw3zUTDy1zkDby1zs7nz0zw3tz0zz3ws"
 ImageText.backtitle:="|<>*134$35.zzzzzz01Dwzy02TtzzlzznzzXznbzz7n1D3yDY2Q3wTCQlnsyQtbbtwtn0DntnaTzbnbCTzDb0Q1yTD4w7zzzzzw"
 ImageText.closeable:="|<>0xBCBDBA@0.80$41.lsySTTvlVsyTzjU7VwzzTUS7wyRz3sTwzLzDVzwzDzy30wzzzs5wsTwTUbywTkS2TywT0y0zxtw0y1kvbn0y7nmTDUy7bVwzkzDzDlzUzDwz7zVy7VyDy7s00yTsT00MyTVwDTsyQ7kzzkzQ"
 ImageText.close:="|<>**50$43.S7q0000Q0v0000AzxU0004tyrwzjus3T7syCM1i8tCHA0rTRyRa0PBaTSP0BYPXUAtynNwrzDzRxzNzk3i8tC1S7rlyDVbzzTryzs"
